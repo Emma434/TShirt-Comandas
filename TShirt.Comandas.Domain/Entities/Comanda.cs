@@ -4,43 +4,46 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TShirt.Comandas.Domain.Entities
+namespace TShirt.Comandas.Domain.Entities;
+
+public class Comanda
 {
-    public class Comanda
+    public Guid Id { get; private set; }
+    public string NombreCliente { get; private set; }
+    public string Vendedor { get; private set; }
+    public string? Estampador { get; private set; }
+
+    // Características de la prenda
+    public string Talla { get; private set; }
+    public TipoPrenda Tipo { get; private set; } // Aquí definimos si es Polera o Polerón
+    public int ColorPrendaId { get; private set; }
+
+    public EstadoComanda Estado { get; private set; }
+    public DateTime FechaCreacion { get; private set; }
+
+    // La lista de estampados está bloqueada. Nadie puede hacer _detalles.Add() desde afuera.
+    private readonly List<DetalleEstampado> _detalles = new();
+    public IReadOnlyCollection<DetalleEstampado> Detalles => _detalles.AsReadOnly();
+
+    protected Comanda() { }
+
+    // Constructor para crear una Comanda VÁLIDA desde el inicio
+    public Comanda(string nombreCliente, string vendedor, string talla, TipoPrenda tipo, int colorPrendaId)
     {
-        public Guid Id { get; private set; }
-        public string NombreCliente { get; private set; }
-        public string DescripcionPedido { get; private set; }
-        public EstadoComanda EstadoActual { get; private set; }
-        public DateTime FechaCreacion { get; private set; }
-        public DateTime? FechaActualizacion { get; private set; }
+        Id = Guid.NewGuid();
+        NombreCliente = nombreCliente;
+        Vendedor = vendedor;
+        Talla = talla;
+        Tipo = tipo;
+        ColorPrendaId = colorPrendaId;
+        Estado = EstadoComanda.Pendiente;
+        FechaCreacion = DateTime.UtcNow;
+    }
 
-        // Un constructor privado obliga a usar el método "Crear"
-        public Comanda() { }
-
-        // Método de fábrica para crear una comanda limpia
-        public static Comanda Crear(string nombreCliente, string descripcionPedido)
-        {
-            if (string.IsNullOrWhiteSpace(nombreCliente)) throw new ArgumentException("El cliente es obligatorio");
-
-            return new Comanda
-            {
-                Id = Guid.NewGuid(),
-                NombreCliente = nombreCliente,
-                DescripcionPedido = descripcionPedido,
-                EstadoActual = EstadoComanda.Pendiente, // Nace obligatoriamente en Pendiente
-                FechaCreacion = DateTime.UtcNow
-            };
-        }
-
-        // Método para mover la máquina de estados
-        public void CambiarEstado(EstadoComanda nuevoEstado)
-        {
-            // Aquí en el futuro pondremos reglas de negocio, 
-            // ej: "No puedes pasar de Pendiente a Entregado sin pasar por EnPreparacion"
-
-            EstadoActual = nuevoEstado;
-            FechaActualizacion = DateTime.UtcNow;
-        }
+    // Única forma permitida de agregar un estampado a la comanda
+    public void AgregarEstampado(string skuDiseno, string ubicacion, string tipoEstampado, int cantidad)
+    {
+        var detalle = new DetalleEstampado(skuDiseno, ubicacion, tipoEstampado, cantidad);
+        _detalles.Add(detalle);
     }
 }

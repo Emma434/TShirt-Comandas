@@ -36,6 +36,8 @@ try
 
     var app = builder.Build();
 
+    app.UseMiddleware<TShirt.Comandas.API.Middleware.ExceptionMiddleware>();
+
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();

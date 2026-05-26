@@ -19,7 +19,7 @@ namespace TShirt.Comandas.Infrastructure.Persistence
             // Configuraciones de Clean Architecture para la tabla
             modelBuilder.Entity<Comanda>().HasKey(c => c.Id);
             modelBuilder.Entity<Comanda>().Property(c => c.NombreCliente).IsRequired().HasMaxLength(100);
-            modelBuilder.Entity<Comanda>().Property(c => c.DescripcionPedido).IsRequired().HasMaxLength(500);
+            //modelBuilder.Entity<Comanda>().Property(c => c.DescripcionPedido).IsRequired().HasMaxLength(500);
         }
     }
 }

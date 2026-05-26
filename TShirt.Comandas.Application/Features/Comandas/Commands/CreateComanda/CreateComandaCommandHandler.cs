@@ -13,21 +13,37 @@ namespace TShirt.Comandas.Application.Features.Comandas.Commands.CreateComanda;
 
 public class CreateComandaCommandHandler : IRequestHandler<CreateComandaCommand, Guid>
 {
-    private readonly IComandaRepository _repository;
-
-    // Inyección de dependencias pura. MediatR y el contenedor de .NET se encargarán de pasar la implementación real.
-    public CreateComandaCommandHandler(IComandaRepository repository)
+    // Por ahora omitimos la inyección de la base de datos (DbContext/Repository) para enfocarnos en la lógica
+    public CreateComandaCommandHandler()
     {
-        _repository = repository;
     }
 
     public async Task<Guid> Handle(CreateComandaCommand request, CancellationToken cancellationToken)
     {
-        // USAMOS LA FACTORY METHOD, no el new Comanda()
-        var comanda = Comanda.Crear(request.NombreCliente, request.DescripcionPedido);
+        // 1. Instanciamos la Entidad Principal usando el constructor seguro que creamos ayer
+        var comanda = new Comanda(
+            request.NombreCliente,
+            request.Vendedor,
+            request.Talla,
+            (TipoPrenda)request.TipoPrendaId, // Convertimos el int (1 o 2) al Enum de Dominio
+            request.ColorPrendaId
+        );
 
-        await _repository.AddAsync(comanda);
+        // 2. Agregamos los estampados uno por uno, usando el único método permitido
+        foreach (var estampado in request.Estampados)
+        {
+            comanda.AgregarEstampado(
+                estampado.SkuDiseno,
+                estampado.Ubicacion,
+                estampado.TipoEstampado,
+                estampado.Cantidad
+            );
+        }
 
+        // 3. Aquí iría el guardado en base de datos: await _dbContext.Comandas.AddAsync(comanda);
+        // await _dbContext.SaveChangesAsync();
+
+        // 4. Retornamos el ID generado
         return comanda.Id;
     }
 }
