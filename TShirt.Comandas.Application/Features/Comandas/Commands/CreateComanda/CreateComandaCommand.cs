@@ -7,20 +7,17 @@ using MediatR;
 
 namespace TShirt.Comandas.Application.Features.Comandas.Commands.CreateComanda;
 
-// El "Command" es la estructura de datos que esperamos recibir desde el frontend (Swagger/Postman)
+// Ahora recibimos "Origen" en lugar de "Vendedor", y una lista de "Items" genéricos
 public record CreateComandaCommand(
     string NombreCliente,
-    string Vendedor,
-    string Talla,
-    int TipoPrendaId, // Recibiremos 1 para Polera, 2 para Poleron
-    int ColorPrendaId,
-    List<EstampadoDto> Estampados // La lista de diseños que lleva esta prenda
+    string Origen,
+    List<ItemComandaDto> Items
 ) : IRequest<Guid>;
 
-// DTO (Data Transfer Object) para los detalles
-public record EstampadoDto(
-    string SkuDiseno,
-    string Ubicacion,
-    string TipoEstampado,
-    int Cantidad
+// DTO genérico que sirve para una polera, un café o un repuesto
+public record ItemComandaDto(
+    string SkuProducto,
+    string DescripcionProducto,
+    int Cantidad,
+    string? NotasConfiguracion
 );
