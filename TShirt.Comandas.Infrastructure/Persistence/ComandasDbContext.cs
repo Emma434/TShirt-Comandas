@@ -1,25 +1,43 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TShirt.Comandas.Domain.Entities;
 
-namespace TShirt.Comandas.Infrastructure.Persistence
+namespace TShirt.Comandas.Infrastructure.Persistence;
+
+public class ComandasDbContext : DbContext
 {
-    public class ComandasDbContext : DbContext
+    public ComandasDbContext(DbContextOptions<ComandasDbContext> options) : base(options) { }
+
+    public DbSet<Comanda> Comandas => Set<Comanda>();
+    public DbSet<ItemComanda> ItemsComanda => Set<ItemComanda>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public ComandasDbContext(DbContextOptions<ComandasDbContext> options) : base(options)
+        base.OnModelCreating(modelBuilder);
+
+        // 1. Configuración de la Comanda
+        modelBuilder.Entity<Comanda>(entity =>
         {
-        }
+            entity.HasKey(c => c.Id);
 
-        // Aquí registramos tu entidad del Dominio como una tabla en la base de datos
-        public DbSet<Comanda> Comandas { get; set; }
+            // Protegemos el encapsulamiento: EF Core escribirá directo en la lista privada '_items'
+            entity.Metadata.FindNavigation(nameof(Comanda.Items))!
+                  .SetPropertyAccessMode(PropertyAccessMode.Field);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+            // Relación 1 a Muchos
+            entity.HasMany(c => c.Items)
+                  .WithOne()
+                  .HasForeignKey("ComandaId") // Crea la columna en la BD sin ensuciar tu Dominio
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 2. Configuración del ItemComanda (El comodín SaaS)
+        modelBuilder.Entity<ItemComanda>(entity =>
         {
-            base.OnModelCreating(modelBuilder);
+            entity.HasKey(i => i.Id);
 
-            // Configuraciones de Clean Architecture para la tabla
-            modelBuilder.Entity<Comanda>().HasKey(c => c.Id);
-            modelBuilder.Entity<Comanda>().Property(c => c.NombreCliente).IsRequired().HasMaxLength(100);
-            //modelBuilder.Entity<Comanda>().Property(c => c.DescripcionPedido).IsRequired().HasMaxLength(500);
-        }
+            // Esto permite guardar propiedades dinámicas sin romper la tabla relacional
+            entity.Property(i => i.NotasConfiguracion)
+                  .HasColumnType("jsonb");
+        });
     }
 }

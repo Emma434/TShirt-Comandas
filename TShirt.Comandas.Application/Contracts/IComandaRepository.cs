@@ -9,5 +9,5 @@ namespace TShirt.Comandas.Application.Contracts;
 
 public interface IComandaRepository
 {
-    Task AddAsync(Comanda comanda);
+    Task AddAsync(Comanda comanda, CancellationToken cancellationToken);
 }
