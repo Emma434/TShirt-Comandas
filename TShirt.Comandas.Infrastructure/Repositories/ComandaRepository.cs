@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TShirt.Comandas.Application.Contracts; // ¡CRUCIAL! Esto ahora apuntará a la única interfaz viva en la solución
+using Microsoft.EntityFrameworkCore;
+using TShirt.Comandas.Application.Contracts;
 using TShirt.Comandas.Domain.Entities;
 using TShirt.Comandas.Infrastructure.Persistence;
-using TShirt.Comandas.Application.Contracts; // Debe consumir la de la Aplicación
 
 namespace TShirt.Comandas.Infrastructure.Repositories;
 
-// Al haber borrado el duplicado local, el compilador se verá obligado a enlazar con la capa de Aplicación
 public class ComandaRepository : IComandaRepository
 {
     private readonly ComandasDbContext _context;
@@ -24,5 +23,14 @@ public class ComandaRepository : IComandaRepository
     {
         await _context.Comandas.AddAsync(comanda, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    // IMPLEMENTACIÓN DE LECTURA OPTIMIZADA (SaaS Grade)
+    public async Task<Comanda?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _context.Comandas
+            .AsNoTracking() // Mitiga la sobre-validación y acelera la lectura en memoria
+            .Include(c => c.Items) // Carga el grafo completo de ítems e hidrata sus JsonDocument
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 }

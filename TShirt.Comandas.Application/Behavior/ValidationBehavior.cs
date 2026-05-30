@@ -8,13 +8,11 @@ using MediatR;
 
 namespace TShirt.Comandas.Application.Behaviors;
 
-// Esta clase intercepta TODOS los comandos antes de que lleguen a sus Handlers
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
-    // Inyectamos todos los validadores que existan para este comando específico
     public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
     {
         _validators = validators;
@@ -26,11 +24,12 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         {
             var context = new ValidationContext<TRequest>(request);
 
-            // Ejecuta todas las reglas de validación en paralelo
+            // Ejecutar todos los validadores registrados para este tipo de request en paralelo
             var validationResults = await Task.WhenAll(
-                _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+                _validators.Select(v => v.ValidateAsync(context, cancellationToken))
+            );
 
-            // Recolecta todos los errores encontrados
+            // Recolectar todas las fallas estructurales
             var failures = validationResults
                 .SelectMany(r => r.Errors)
                 .Where(f => f != null)
@@ -38,13 +37,11 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 
             if (failures.Count != 0)
             {
-                // ¡EL GUARDIA ACTÚA! Lanza una excepción con los mensajes amigables.
-                // El flujo se corta aquí. El Handler (Cocinero) NUNCA se entera de que esto pasó.
-                throw new ValidationException(failures);
+                throw new ValidationException(failures); // Lanzamos la excepción formal de FluentValidation
             }
         }
 
-        // Si no hay errores, el guardia abre la puerta y llama al Handler
+        // Si el comando es perfecto, le cedemos el control al Handler de negocio
         return await next();
     }
 }

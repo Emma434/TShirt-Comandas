@@ -21,22 +21,25 @@ public class ExceptionMiddleware
         }
         catch (ValidationException ex)
         {
-            // AQUÍ ATRAPAMOS LA EXCEPCIÓN DEL BEHAVIOR
-            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest; // HTTP 400
 
-            // Mapeamos los errores de FluentValidation a un formato que el front entienda
-            var errors = ex.Errors.Select(e => new {
-                Campo = e.PropertyName,
-                Mensaje = e.ErrorMessage
-            });
+            // Mapeamos los errores en un diccionario limpio: Propiedad -> Lista de errores
+            var erroresDicionario = ex.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(e => e.ErrorMessage).ToArray()
+                );
 
-            var json = JsonSerializer.Serialize(new
+            var response = new
             {
-                Mensaje = "Error de validación",
-                Detalles = errors
-            });
+                statusCode = (int)HttpStatusCode.BadRequest,
+                message = "Fallo en la validación de los datos de entrada.",
+                errors = erroresDicionario
+            };
 
+            var json = JsonSerializer.Serialize(response);
             await context.Response.WriteAsync(json);
         }
         catch (Exception ex)
